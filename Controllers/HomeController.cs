@@ -8,54 +8,59 @@ namespace Todo.Controllers
     [ApiController]
     public class HomeController : ControllerBase
     {
-        [HttpGet("/home")]
-        public IEnumerable<TodoModel> Get([FromServices] AppDbContext context)
-        {
-            return context.Todos.AsNoTracking().ToList();
-        }
+        [HttpGet("/buscar-todos")]
+        public IActionResult Get([FromServices] AppDbContext context)
+            => Ok(context.Todos.AsNoTracking().ToList());
+        
 
-        [HttpGet("/home/{id:int}")]
-        public TodoModel GetById([FromRoute]int id, [FromServices] AppDbContext context)
+        [HttpGet("/buscar-por-id/{id:int}")]
+        public IActionResult GetById([FromRoute]int id, [FromServices] AppDbContext context)
         {
-            return context.Todos.AsNoTracking().FirstOrDefault(x=>x.Id==id);
+            var todos = context.Todos.AsNoTracking().FirstOrDefault(x=>x.Id==id);
+            
+            if(todos == null) 
+                return NotFound(); 
+
+            return Ok(todos);
         }
+        
 
         [HttpPost("/cadastrar")]
-        public TodoModel Post([FromBody] TodoModel todoModel, [FromServices] AppDbContext context)
+        public IActionResult Post([FromBody] TodoModel todoModel, [FromServices] AppDbContext context)
         {
             context.Todos.Add(todoModel);
             context.SaveChanges();
-            return todoModel;
+            return Created("/{todoModel.Id}", todoModel);
         }
 
         [HttpPut("/atualizar/{id:int}")]
-        public TodoModel Put([FromBody] TodoModel todoModel, [FromRoute] int id, [FromServices] AppDbContext context)
+        public IActionResult Put([FromBody] TodoModel todoModel, [FromRoute] int id, [FromServices] AppDbContext context)
         {
             var model = context.Todos.AsNoTracking().FirstOrDefault(x=>x.Id==id);
 
             if(model == null)
-                return model;
+                return NotFound();
 
              model.Title = todoModel.Title;
              model.Done = todoModel.Done;
 
              context.Todos.Update(model);
              context.SaveChanges();
-             return model;
+             return Ok(model);
         }
 
         [HttpDelete("/remover/{id:int}")]
-        public string Delete([FromRoute] int id, [FromServices] AppDbContext context)
+        public IActionResult Delete([FromRoute] int id, [FromServices] AppDbContext context)
         {
             var model = context.Todos.AsNoTracking().FirstOrDefault(x=>x.Id==id);
 
             if(model == null)
-            return "Código inválido";
+            return NotFound();
 
             context.Todos.Remove(model);
             context.SaveChanges();
 
-            return "Removido com sucesso";
+            return Ok("Removido com sucesso");
         }
     }
 }
